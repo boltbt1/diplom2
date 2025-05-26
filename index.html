@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система обращений граждан</title>
+    <script src="https://cdn.tailwindcss.com "></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css ">
+    <style>
+        .sidebar-collapse {
+            transition: all 0.3s ease;
+            position: fixed;
+            left: -235px;
+            width: 250px;
+            height: 100vh;
+            z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        .sidebar-collapse:hover {
+            left: 0;
+        }
+        .sidebar-trigger {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 15px;
+            height: 100vh;
+            z-index: 999;
+        }
+        .sidebar-trigger:hover ~ .sidebar-collapse,
+        .sidebar-collapse:hover {
+            left: 0;
+        }
+        .chat-message {
+            max-width: 70%;
+            word-wrap: break-word;
+            white-space: normal;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 10px;
+        }
+        .request-item:hover {
+            background-color: #f3f4f6;
+        }
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        .modal-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .animate-pulse {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .message-user {
+            margin-left: auto;
+            background-color: #e3f2fd;
+            border-radius: 18px 18px 0 18px;
+        }
+        .message-other {
+            margin-right: auto;
+            background-color: #f1f1f1;
+            border-radius: 18px 18px 18px 0;
+        }
+        .message-employee {
+            margin-left: auto;
+            background-color: #e3f2fd;
+            border-radius: 18px 18px 0 18px;
+        }
+        .active-tab {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .admin-panel {
+            display: none;
+        }
+        .response-modal-content {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Главная страница -->
+    <div id="home-page" class="min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
+            <div class="flex justify-center mb-8">
+                <img src="https://via.placeholder.com/150x80?text= ГосСлужба" alt="Логотип" class="h-20">
+            </div>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">Имя пользователя</label>
+                    <input type="text" id="username" name="username" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Пароль</label>
+                    <input type="password" id="password" name="password" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex items-center justify-between">
+                    <button type="submit" 
+                            class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Войти
+                    </button>
+                </div>
+                <div class="text-center">
+                    <button type="button" id="show-register" 
+                            class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        Зарегистрироваться
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Форма регистрации -->
+    <div id="register-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 modal modal-hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex justify-between items-center border-b px-6 py-4">
+                <h3 class="text-lg font-medium text-gray-900">Регистрация</h3>
+                <button id="close-register" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="register-form" class="p-6 space-y-4">
+                <div>
+                    <label for="fullname" class="block text-sm font-medium text-gray-700">Полное имя *</label>
+                    <input type="text" id="fullname" name="fullname" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="district" class="block text-sm font-medium text-gray-700">Район/место жительства *</label>
+                    <input type="text" id="district" name="district" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Электронная почта</label>
+                    <input type="email" id="email" name="email" 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700">Номер телефона *</label>
+                    <input type="tel" id="phone" name="phone" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="reg-password" class="block text-sm font-medium text-gray-700">Пароль *</label>
+                    <input type="password" id="reg-password" name="reg-password" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="confirm-password" class="block text-sm font-medium text-gray-700">Подтверждение пароля *</label>
+                    <input type="password" id="confirm-password" name="confirm-password" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex justify-end pt-4">
+                    <button type="button" id="cancel-register" 
+                            class="mr-3 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Отмена
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                        Зарегистрироваться
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Модальное окно создания заявки -->
+    <div id="new-request-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 modal modal-hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+            <div class="flex justify-between items-center border-b px-6 py-4">
+                <h3 class="text-lg font-medium text-gray-900">Новое обращение</h3>
+                <button id="close-new-request" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="new-request-form" class="p-6 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="request-category" class="block text-sm font-medium text-gray-700">Категория *</label>
+                        <select id="request-category" name="request-category" required 
+                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                            <option value="">Выберите категорию</option>
+                            <option value="ЖКХ">ЖКХ</option>
+                            <option value="Транспорт">Транспорт</option>
+                            <option value="Благоустройство">Благоустройство</option>
+                            <option value="Образование">Образование</option>
+                            <option value="Здравоохранение">Здравоохранение</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="request-subcategory" class="block text-sm font-medium text-gray-700">Подкатегория</label>
+                        <select id="request-subcategory" name="request-subcategory" 
+                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                            <option value="">Выберите подкатегорию</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label for="request-title" class="block text-sm font-medium text-gray-700">Тема обращения *</label>
+                    <input type="text" id="request-title" name="request-title" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="request-description" class="block text-sm font-medium text-gray-700">Описание проблемы *</label>
+                    <textarea id="request-description" name="request-description" rows="4" required 
+                              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+                <div>
+                    <label for="request-address" class="block text-sm font-medium text-gray-700">Адрес *</label>
+                    <input type="text" id="request-address" name="request-address" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex justify-end pt-4">
+                    <button type="button" id="cancel-new-request" 
+                            class="mr-3 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Отмена
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                        Отправить обращение
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Интерфейс гражданина -->
+    <div id="citizen-panel" class="hidden min-h-screen bg-gray-100">
+        <div class="max-w-4xl mx-auto p-6">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Мои обращения</h1>
+                    <p class="text-gray-600">Здесь вы можете отслеживать статус ваших обращений</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="create-request" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        <i class="fas fa-plus mr-2"></i>Новое обращение
+                    </button>
+                    <button id="citizen-logout" class="flex items-center text-gray-700 hover:text-gray-900">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Выйти
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">История обращений</h3>
+                        <div class="relative">
+                            <select id="request-filter" class="appearance-none bg-gray-50 border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500">
+                                <option value="all">Все обращения</option>
+                                <option value="active">Активные</option>
+                                <option value="completed">Завершенные</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <ul class="divide-y divide-gray-200" id="requests-list">
+                    <!-- Примеры обращений будут добавляться динамически -->
+                </ul>
+            </div>
+            <!-- Детали обращения (скрыто по умолчанию) -->
+            <div id="request-details" class="hidden mt-6 bg-white shadow overflow-hidden sm:rounded-lg">
+                <!-- Содержимое будет заполняться динамически -->
+            </div>
+        </div>
+    </div>
+    <!-- Интерфейс работника администрации -->
+    <div id="employee-panel" class="hidden min-h-screen bg-gray-100">
+        <!-- Триггер для боковой панели -->
+        <div class="sidebar-trigger"></div>
+        <!-- Боковая панель -->
+        <div class="sidebar-collapse bg-blue-800 text-white flex flex-col">
+            <div class="p-4 flex items-center border-b border-blue-700">
+                <img src="https://via.placeholder.com/40 " alt="Логотип" class="h-10 w-10 rounded-full">
+                <span class="ml-3 font-semibold">Администрация</span>
+            </div>
+            <div class="flex-1 overflow-y-auto">
+                <nav class="p-2">
+                    <div class="mb-4">
+                        <p class="px-3 py-2 text-xs font-semibold text-blue-200 uppercase tracking-wider">Меню</p>
+                        <a href="#" class="block px-3 py-2 rounded hover:bg-blue-700 transition flex items-center active-tab" id="employee-requests-tab">
+                            <i class="fas fa-inbox mr-3"></i>
+                            <span>Обращения</span>
+                        </a>
+                        <a href="#" class="block px-3 py-2 rounded hover:bg-blue-700 transition flex items-center" id="employee-profile-tab">
+                            <i class="fas fa-user mr-3"></i>
+                            <span>Профиль</span>
+                        </a>
+                    </div>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-blue-700">
+                <button id="employee-logout" class="w-full flex items-center justify-center px-4 py-2 bg-blue-700 rounded hover:bg-blue-600 transition">
+                    <i class="fas fa-sign-out-alt mr-2"></i>
+                    <span>Выйти</span>
+                </button>
+            </div>
+        </div>
+        <!-- Основное содержимое -->
+        <div class="flex-1 p-6 ml-0">
+            <!-- Контент для вкладки обращений -->
+            <div id="employee-requests-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">Обращения граждан</h1>
+                    <div class="relative">
+                        <select id="employee-request-filter" class="appearance-none bg-gray-50 border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-blue-500">
+                            <option value="all">Все обращения</option>
+                            <option value="new">Новые</option>
+                            <option value="in_progress">В работе</option>
+                            <option value="completed">Завершенные</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">Список обращений</h3>
+                            <div class="relative">
+                                <input type="text" id="employee-search" placeholder="Поиск..." class="pl-8 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="divide-y divide-gray-200" id="employee-requests-list">
+                        <!-- Список обращений будет заполняться динамически -->
+                    </ul>
+                </div>
+            </div>
+            <!-- Контент для вкладки профиля -->
+            <div id="employee-profile-content" class="hidden">
+                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Профиль сотрудника</h3>
+                        <p class="mt-1 max-w-2xl text-sm text-gray-500">Личная информация и статистика</p>
+                    </div>
+                    <div class="px-4 py-5 sm:p-6">
+                        <div class="mb-6">
+                            <h4 class="text-xl font-semibold" id="profile-name">Иванов Иван Иванович</h4>
+                            <p class="text-gray-600" id="profile-department">Отделы: ЖКХ, Транспорт</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h5 class="text-sm font-medium text-gray-500 mb-2">Статистика обращений</h5>
+                                <p class="text-sm mb-1"><span class="font-medium">Всего обращений:</span> <span id="total-requests">0</span></p>
+                                <p class="text-sm mb-1"><span class="font-medium">Новые:</span> <span id="new-requests">0</span></p>
+                                <p class="text-sm mb-1"><span class="font-medium">В работе:</span> <span id="in-progress-requests">0</span></p>
+                                <p class="text-sm"><span class="font-medium">Завершенные:</span> <span id="completed-requests">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Модальное окно для ответа на обращение -->
+            <div id="employee-response-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 modal modal-hidden">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-screen overflow-hidden">
+                    <div class="flex justify-between items-center border-b px-6 py-4">
+                        <h3 class="text-lg font-medium text-gray-900">Ответ на обращение <span id="response-request-id"></span></h3>
+                        <button id="close-response-modal" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 space-y-4 response-modal-content overflow-y-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="font-medium">Категория:</h4>
+                                <p id="response-category" class="text-gray-600"></p>
+                            </div>
+                            <div>
+                                <h4 class="font-medium">Статус:</h4>
+                                <select id="response-status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                    <option value="in_progress">В работе</option>
+                                    <option value="completed">Завершено</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">Описание проблемы:</h4>
+                            <p id="response-description" class="text-gray-600"></p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium">Переписка:</h4>
+                            <div class="mt-2 space-y-3 p-3 bg-gray-50 rounded" id="response-messages">
+                                <!-- Сообщения будут добавляться динамически -->
+                            </div>
+                        </div>
+                        <div id="response-message-container" class="hidden">
+                            <label for="response-message" class="block text-sm font-medium text-gray-700">Ваш ответ </label>
+                            <textarea id="response-message" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+                        <div class="flex justify-end">
+                            <button id="accept-request" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 mr-2">
+                                Принять обращение
+                            </button>
+                            <button id="send-response" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hidden">
+                                Отправить ответ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Административная панель -->
+    <div id="admin-panel" class="hidden min-h-screen bg-gray-100">
+        <div class="max-w-7xl mx-auto p-6">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Административная панель</h1>
+                    <p class="text-gray-600">Управление пользователями и настройками системы</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="admin-logout" class="flex items-center text-gray-700 hover:text-gray-900">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Выйти
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Управление сотрудниками -->
+                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Сотрудники</h3>
+                        <p class="mt-1 text-sm text-gray-500">Добавление и редактирование сотрудников</p>
+                    </div>
+                    <div class="px-4 py-5 sm:p-6">
+                        <button id="add-employee-btn" class="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 mb-4">
+                            <i class="fas fa-plus mr-2"></i>Добавить сотрудника
+                        </button>
+                        <div class="overflow-y-auto max-h-96">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Отдел</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200" id="employees-list">
+                                    <!-- Список сотрудников будет заполняться динамически -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- Управление гражданами -->
+                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Граждане</h3>
+                        <p class="mt-1 text-sm text-gray-500">Управление учетными записями граждан</p>
+                    </div>
+                    <div class="px-4 py-5 sm:p-6">
+                        <div class="relative mb-4">
+                            <input type="text" id="search-citizen" placeholder="Поиск граждан..." class="pl-8 pr-4 py-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                        <div class="overflow-y-auto max-h-96">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200" id="citizens-list">
+                                    <!-- Список граждан будет заполняться динамически -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Модальное окно добавления/редактирования сотрудника -->
+    <div id="employee-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 modal modal-hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex justify-between items-center border-b px-6 py-4">
+                <h3 class="text-lg font-medium text-gray-900" id="employee-modal-title">Добавить сотрудника</h3>
+                <button id="close-employee-modal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="employee-form" class="p-6 space-y-4">
+                <input type="hidden" id="employee-id">
+                <div>
+                    <label for="employee-name" class="block text-sm font-medium text-gray-700">Полное имя *</label>
+                    <input type="text" id="employee-name" name="employee-name" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="employee-username" class="block text-sm font-medium text-gray-700">Логин *</label>
+                    <input type="text" id="employee-username" name="employee-username" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="employee-password" class="block text-sm font-medium text-gray-700">Пароль *</label>
+                    <input type="password" id="employee-password" name="employee-password" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="employee-department" class="block text-sm font-medium text-gray-700">Отдел *</label>
+                    <select id="employee-department" name="employee-department" required multiple
+                            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                        <option value="ЖКХ">ЖКХ</option>
+                        <option value="Транспорт">Транспорт</option>
+                        <option value="Благоустройство">Благоустройство</option>
+                        <option value="Образование">Образование</option>
+                        <option value="Здравоохранение">Здравоохранение</option>
+                    </select>
+                </div>
+                <div class="flex justify-end pt-4">
+                    <button type="button" id="cancel-employee" 
+                            class="mr-3 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Отмена
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                        Сохранить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+			// API URL
+		const API_URL = 'api.php';
+
+		// Current user
+		let currentUser = null;
+
+		// Subcategories cache
+		let subcategories = {};
+
+		// Polling intervals
+		let pollingIntervals = {};
+
+		// Show notification
+		function showNotification(message, isError = false) {
+			const notification = document.createElement('div');
+			notification.className = `fixed top-4 right-4 px-6 py-4 ${isError ? 'bg-red-500' : 'bg-green-500'} text-white rounded-lg shadow-lg flex items-center animate-pulse`;
+			notification.innerHTML = `
+				<i class="fas fa-${isError ? 'exclamation-circle' : 'check-circle'} mr-2"></i>
+				<span>${message}</span>
+			`;
+			document.body.appendChild(notification);
+			setTimeout(() => {
+				notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+				setTimeout(() => notification.remove(), 300);
+			}, 3000);
+		}
+
+		// Fetch with error handling
+		async function apiRequest(action, data = {}, method = 'POST') {
+			try {
+				const response = await fetch(API_URL, {
+					method,
+					headers: { 'Content-Type': 'application/json' },
+					body: method === 'POST' ? JSON.stringify({ action, ...data }) : undefined
+				});
+				
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				
+				const result = await response.json();
+				
+				if (!result.success) {
+					throw new Error(result.error || 'Unknown error');
+				}
+				
+				return result.data;
+			} catch (error) {
+				showNotification(error.message, true);
+				throw error;
+			}
+		}
+
+		// Load categories and subcategories
+		async function loadSubcategories() {
+			try {
+				const data = await apiRequest('get_categories');
+				subcategories = {};
+				
+				data.categories.forEach(cat => {
+					subcategories[cat.name] = cat.subcategories.map(sc => ({ id: sc.id, name: sc.name }));
+				});
+			} catch (error) {
+				console.error('Error loading subcategories:', error);
+			}
+		}
+
+		// Update subcategory dropdown
+		function updateSubcategories(category) {
+			const subcategorySelect = document.getElementById('request-subcategory');
+			subcategorySelect.innerHTML = '<option value="">Выберите подкатегорию</option>';
+			
+			if (category && subcategories[category]) {
+				subcategories[category].forEach(subcat => {
+					const option = document.createElement('option');
+					option.value = subcat.id;
+					option.textContent = subcat.name;
+					subcategorySelect.appendChild(option);
+				});
+			}
+		}
+
+		// Get category ID by name
+		function getCategoryID(name) {
+			const map = { "ЖКХ": 1, "Транспорт": 2, "Благоустройство": 3, "Образование": 4, "Здравоохранение": 5 };
+			return map[name] || null;
+		}
+
+		// Start polling for citizen data
+		function startCitizenPolling() {
+			// Clear any existing interval
+			if (pollingIntervals.citizen) clearInterval(pollingIntervals.citizen);
+			
+			// Initial load
+			loadUserRequests();
+			
+			// Set up polling every 5 seconds
+			pollingIntervals.citizen = setInterval(() => {
+				loadUserRequests(document.getElementById('request-filter').value);
+			}, 5000);
+		}
+
+		// Load user requests
+		async function loadUserRequests(filter = 'all') {
+			try {
+				const requests = await apiRequest('get_requests_citizen', { 
+					user_id: currentUser.id, 
+					filter 
+				});
+				renderRequests(requests);
+			} catch (error) {
+				console.error('Error loading requests:', error);
+			}
+		}
+
+		// Render requests
+		function renderRequests(requests) {
+			const container = document.getElementById('requests-list');
+			container.innerHTML = '';
+			
+			if (!requests.length) {
+				container.innerHTML = `<li class="px-4 py-6 text-center text-gray-500">Нет обращений</li>`;
+				return;
+			}
+			
+			requests.forEach(req => {
+				const item = document.createElement('li');
+				item.className = 'px-4 py-4 sm:px-6 request-item cursor-pointer';
+				item.dataset.id = req.id;
+				item.innerHTML = `
+					<div class="flex justify-between">
+						<p class="text-sm font-medium text-blue-600">#${req.id} - ${req.title}</p>
+						<span class="px-2 rounded-full ${getStatusClass(req.status)}">${req.status === 'new' ? 'Новое' : req.status === 'in_progress' ? 'В работе' : 'Завершено'}</span>
+					</div>
+					<div class="mt-2 text-sm text-gray-500">Категория: ${req.category_name}</div>
+					<div class="mt-2 text-sm text-gray-500">Дата: ${req.date}</div>
+				`;
+				item.addEventListener('click', () => showRequestDetails(req.id));
+				container.appendChild(item);
+			});
+		}
+
+		// Get status class
+		function getStatusClass(status) {
+			return {
+				new: 'bg-yellow-100 text-yellow-800',
+				in_progress: 'bg-green-100 text-green-800',
+				completed: 'bg-blue-100 text-blue-800'
+			}[status] || 'bg-gray-100 text-gray-800';
+		}
+
+		// Show request details
+		async function showRequestDetails(requestId) {
+			try {
+				const request = await apiRequest('get_request_details', { request_id: requestId });
+				const detailsSection = document.getElementById('request-details');
+				const messagesHTML = request.messages.map(msg => `
+					<div class="chat-message ${msg.user_id === currentUser.id ? 'message-user' : 'message-other'} p-3 mb-2 rounded-lg">
+						<p class="text-sm">${msg.message_text}</p>
+						<p class="text-xs text-gray-500 mt-1">${msg.timestamp}</p>
+					</div>
+				`).join('');
+				
+				detailsSection.innerHTML = `
+					<div class="px-4 py-5 border-b">
+						<h3 class="text-lg font-medium">Обращение #${request.id}</h3>
+						<button id="close-details" class="absolute top-4 right-4 text-gray-500">×</button>
+					</div>
+					<div class="px-4 py-5">
+						<p><strong>Статус:</strong> ${request.status === 'new' ? 'Новое' : request.status === 'in_progress' ? 'В работе' : 'Завершено'}</p>
+						<p><strong>Описание:</strong> ${request.description}</p>
+						<div class="mt-4">
+							<h4>Переписка:</h4>
+							<div id="messages-container">${messagesHTML}</div>
+						</div>
+						<textarea id="new-message-text" rows="3" class="w-full mt-2 p-2 border rounded"></textarea>
+						<button id="send-message-btn" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded">Отправить</button>
+					</div>
+				`;
+				
+				document.getElementById('close-details').addEventListener('click', () => {
+					detailsSection.classList.add('hidden');
+				});
+				
+				document.getElementById('send-message-btn').addEventListener('click', async () => {
+					const messageText = document.getElementById('new-message-text').value.trim();
+					
+					if (!messageText) {
+						showNotification('Сообщение не может быть пустым', true);
+						return;
+					}
+					
+					await apiRequest('send_message', {
+						request_id: requestId,
+						sender_id: currentUser.id,
+						text: messageText
+					});
+					
+					document.getElementById('new-message-text').value = '';
+					showRequestDetails(requestId);
+				});
+				
+				detailsSection.classList.remove('hidden');
+			} catch (error) {
+				console.error('Error loading request details:', error);
+			}
+		}
+
+		// Start polling for employee data
+		function startEmployeePolling() {
+			// Clear any existing interval
+			if (pollingIntervals.employee) clearInterval(pollingIntervals.employee);
+			
+			// Initial load
+			loadEmployeeRequests();
+			
+			// Set up polling every 5 seconds
+			pollingIntervals.employee = setInterval(() => {
+				loadEmployeeRequests(document.getElementById('employee-request-filter').value);
+			}, 5000);
+		}
+
+		// Load employee requests
+		async function loadEmployeeRequests(filter = 'all') {
+			try {
+				const requests = await apiRequest('get_requests_citizen', { 
+					user_id: currentUser.id, 
+					filter 
+				});
+				renderEmployeeRequests(requests);
+			} catch (error) {
+				console.error('Error loading employee requests:', error);
+			}
+		}
+
+		// Render employee requests
+		function renderEmployeeRequests(requests) {
+			const container = document.getElementById('employee-requests-list');
+			container.innerHTML = '';
+			
+			if (!requests.length) {
+				container.innerHTML = `<li class="px-4 py-6 text-center text-gray-500">Нет обращений</li>`;
+				return;
+			}
+			
+			requests.forEach(req => {
+				const item = document.createElement('li');
+				item.className = 'px-4 py-4 sm:px-6 request-item cursor-pointer';
+				item.dataset.id = req.id;
+				item.innerHTML = `
+					<div class="flex justify-between">
+						<p class="text-sm font-medium text-blue-600">#${req.id} - ${req.title}</p>
+						<span class="px-2 rounded-full ${getStatusClass(req.status)}">${req.status === 'new' ? 'Новое' : req.status === 'in_progress' ? 'В работе' : 'Завершено'}</span>
+					</div>
+					<div class="mt-2 text-sm text-gray-500">Категория: ${req.category_name}</div>
+					<div class="mt-2 text-sm text-gray-500">Дата: ${req.date}</div>
+				`;
+				item.addEventListener('click', () => showEmployeeRequestDetails(req.id));
+				container.appendChild(item);
+			});
+		}
+
+		// Show employee request details
+		async function showEmployeeRequestDetails(requestId) {
+			try {
+				const request = await apiRequest('get_request_details', { request_id: requestId });
+				const modal = document.getElementById('employee-response-modal');
+				const messagesHTML = request.messages.map(msg => `
+					<div class="chat-message ${msg.role === 'employee' ? 'message-employee' : 'message-other'} p-3 mb-2 rounded-lg">
+						<p class="text-sm">${msg.message_text}</p>
+						<p class="text-xs text-gray-500 mt-1">${msg.timestamp}</p>
+					</div>
+				`).join('');
+				
+				document.getElementById('response-request-id').textContent = `#${request.id}`;
+				document.getElementById('response-category').textContent = request.category_name;
+				document.getElementById('response-description').textContent = request.description;
+				document.getElementById('response-messages').innerHTML = messagesHTML;
+				document.getElementById('response-status').value = request.status;
+				document.getElementById('response-message-container').classList.remove('hidden');
+				document.getElementById('send-response').classList.remove('hidden');
+				document.getElementById('accept-request').classList.toggle('hidden', request.status !== 'new');
+				
+				const updateStatus = async () => {
+					const status = document.getElementById('response-status').value;
+					await apiRequest('update_request_status', { request_id: requestId, status });
+					showNotification('Статус обновлен');
+					showEmployeeRequestDetails(requestId);
+				};
+				
+				document.getElementById('response-status').onchange = updateStatus;
+				
+				document.getElementById('accept-request').onclick = async () => {
+					await apiRequest('update_request_status', { request_id: requestId, status: 'in_progress' });
+					showNotification('Обращение принято');
+					showEmployeeRequestDetails(requestId);
+				};
+				
+				document.getElementById('send-response').onclick = async () => {
+					const messageText = document.getElementById('response-message').value.trim();
+					
+					if (!messageText) {
+						showNotification('Сообщение не может быть пустым', true);
+						return;
+					}
+					
+					await apiRequest('send_message', {
+						request_id: requestId,
+						sender_id: currentUser.id,
+						text: messageText
+					});
+					
+					document.getElementById('response-message').value = '';
+					showEmployeeRequestDetails(requestId);
+				};
+				
+				document.getElementById('close-response-modal').onclick = () => {
+					modal.classList.add('modal-hidden');
+				};
+				
+				modal.classList.remove('modal-hidden');
+			} catch (error) {
+				console.error('Error loading employee request details:', error);
+			}
+		}
+
+		// Start polling for admin data
+		function startAdminPolling() {
+			// Clear any existing interval
+			if (pollingIntervals.admin) clearInterval(pollingIntervals.admin);
+			
+			// Initial load
+			renderAdminPanel();
+			
+			// Set up polling every 5 seconds
+			pollingIntervals.admin = setInterval(renderAdminPanel, 5000);
+		}
+
+		// Load admin panel
+		async function renderAdminPanel() {
+			try {
+				const employees = await apiRequest('get_employees');
+				renderEmployees(employees);
+				
+				const citizens = await apiRequest('get_citizens');
+				renderCitizens(citizens);
+			} catch (error) {
+				console.error('Error loading admin panel:', error);
+			}
+		}
+
+		// Render employees
+		function renderEmployees(employees) {
+			const container = document.getElementById('employees-list');
+			container.innerHTML = '';
+			
+			if (!employees.length) {
+				container.innerHTML = `<tr><td colspan="3" class="px-4 py-3 text-sm text-center">Нет сотрудников</td></tr>`;
+				return;
+			}
+			
+			employees.forEach(emp => {
+				const row = document.createElement('tr');
+				row.innerHTML = `
+					<td class="px-4 py-3 text-sm">${emp.name}</td>
+					<td class="px-4 py-3 text-sm">${emp.department}</td>
+					<td class="px-4 py-3 text-sm">
+						<button class="edit-employee text-blue-600 hover:text-blue-800" data-id="${emp.id}">Редактировать</button>
+						<button class="delete-employee text-red-600 hover:text-red-800 ml-2" data-id="${emp.id}">Удалить</button>
+					</td>
+				`;
+				row.querySelector('.edit-employee').addEventListener('click', () => editEmployee(emp.id));
+				row.querySelector('.delete-employee').addEventListener('click', () => deleteEmployee(emp.id));
+				container.appendChild(row);
+			});
+		}
+
+		// Render citizens
+		function renderCitizens(citizens) {
+			const container = document.getElementById('citizens-list');
+			container.innerHTML = '';
+			
+			if (!citizens.length) {
+				container.innerHTML = `<tr><td colspan="3" class="px-4 py-3 text-sm text-center">Нет граждан</td></tr>`;
+				return;
+			}
+			
+			citizens.forEach(cit => {
+				const row = document.createElement('tr');
+				row.innerHTML = `
+					<td class="px-4 py-3 text-sm">${cit.name}</td>
+					<td class="px-4 py-3 text-sm">
+						<span class="px-2 py-1 rounded-full text-xs ${cit.banned ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
+							${cit.banned ? 'Заблокирован' : 'Активен'}
+						</span>
+					</td>
+					<td class="px-4 py-3 text-sm">
+						<button class="toggle-ban text-${cit.banned ? 'green' : 'red'}-600 hover:text-${cit.banned ? 'green' : 'red'}-800" data-id="${cit.id}">
+							${cit.banned ? 'Разблокировать' : 'Заблокировать'}
+						</button>
+					</td>
+				`;
+				row.querySelector('.toggle-ban').addEventListener('click', () => toggleBanCitizen(cit.id));
+				container.appendChild(row);
+			});
+		}
+
+		// Edit employee
+		async function editEmployee(id) {
+			try {
+				const employees = await apiRequest('get_employees');
+				const employee = employees.find(emp => emp.id === id);
+				
+				if (!employee) throw new Error('Employee not found');
+				
+				const modal = document.getElementById('employee-modal');
+				document.getElementById('employee-modal-title').textContent = 'Редактировать сотрудника';
+				document.getElementById('employee-id').value = id;
+				document.getElementById('employee-name').value = employee.name;
+				document.getElementById('employee-username').value = employee.username || '';
+				document.getElementById('employee-password').value = '';
+				
+				const deptSelect = document.getElementById('employee-department');
+				Array.from(deptSelect.options).forEach(opt => {
+					opt.selected = employee.department.split(', ').includes(opt.value);
+				});
+				
+				document.getElementById('employee-form').onsubmit = async e => {
+					e.preventDefault();
+					const departments = Array.from(deptSelect.selectedOptions).map(opt => opt.value);
+					
+					await apiRequest('edit_employee', {
+						id,
+						name: document.getElementById('employee-name').value,
+						username: document.getElementById('employee-username').value,
+						password: document.getElementById('employee-password').value,
+						departments
+					});
+					
+					modal.classList.add('modal-hidden');
+					renderAdminPanel();
+				};
+				
+				modal.classList.remove('modal-hidden');
+			} catch (error) {
+				console.error('Error editing employee:', error);
+			}
+		}
+
+		// Delete employee
+		async function deleteEmployee(id) {
+			if (confirm('Вы уверены, что хотите удалить сотрудника?')) {
+				try {
+					await apiRequest('delete_employee', { id });
+					showNotification('Сотрудник удален');
+					renderAdminPanel();
+				} catch (error) {
+					console.error('Error deleting employee:', error);
+				}
+			}
+		}
+
+		// Toggle ban citizen
+		async function toggleBanCitizen(id) {
+			try {
+				await apiRequest('toggle_ban_citizen', { id });
+				showNotification('Статус пользователя изменен');
+				renderAdminPanel();
+			} catch (error) {
+				console.error('Error toggling ban:', error);
+			}
+		}
+
+		// Event listeners
+		document.getElementById('show-register').addEventListener('click', () => {
+			document.getElementById('register-modal').classList.remove('modal-hidden');
+		});
+
+		document.getElementById('close-register').addEventListener('click', () => {
+			document.getElementById('register-modal').classList.add('modal-hidden');
+		});
+
+		document.getElementById('cancel-register').addEventListener('click', () => {
+			document.getElementById('register-modal').classList.add('modal-hidden');
+		});
+
+		document.getElementById('citizen-logout').addEventListener('click', () => {
+			document.getElementById('citizen-panel').classList.add('hidden');
+			document.getElementById('home-page').classList.remove('hidden');
+			document.getElementById('request-details').classList.add('hidden');
+			
+			if (pollingIntervals.citizen) clearInterval(pollingIntervals.citizen);
+			
+			currentUser = null;
+		});
+
+		document.getElementById('create-request').addEventListener('click', () => {
+			document.getElementById('new-request-modal').classList.remove('modal-hidden');
+		});
+
+		document.getElementById('close-new-request').addEventListener('click', () => {
+			document.getElementById('new-request-modal').classList.add('modal-hidden');
+		});
+
+		document.getElementById('cancel-new-request').addEventListener('click', () => {
+			document.getElementById('new-request-modal').classList.add('modal-hidden');
+		});
+
+		document.getElementById('request-category').addEventListener('change', function () {
+			updateSubcategories(this.value);
+		});
+
+		document.getElementById('new-request-form').addEventListener('submit', async e => {
+			e.preventDefault();
+			
+			try {
+				const formData = {
+					title: document.getElementById('request-title').value,
+					description: document.getElementById('request-description').value,
+					address: document.getElementById('request-address').value,
+					category_id: getCategoryID(document.getElementById('request-category').value),
+					subcategory_id: document.getElementById('request-subcategory').value || null,
+					user_id: currentUser.id,
+					assigned_department_id: getCategoryID(document.getElementById('request-category').value)
+				};
+				
+				const result = await apiRequest('create_request', formData);
+				showNotification(`Обращение создано! ID: #${result.request_id}`);
+				document.getElementById('new-request-form').reset();
+				document.getElementById('new-request-modal').classList.add('modal-hidden');
+				loadUserRequests();
+			} catch (error) {
+				console.error('Error creating request:', error);
+			}
+		});
+
+		document.getElementById('login-form').addEventListener('submit', async e => {
+			e.preventDefault();
+			
+			try {
+				const user = await apiRequest('login', {
+					username: document.getElementById('username').value,
+					password: document.getElementById('password').value
+				});
+				
+				currentUser = user;
+				document.getElementById('home-page').classList.add('hidden');
+				
+				if (user.role === 'admin') {
+					document.getElementById('admin-panel').classList.remove('hidden');
+					startAdminPolling();
+				} else if (user.role === 'employee') {
+					document.getElementById('employee-panel').classList.remove('hidden');
+					startEmployeePolling();
+				} else {
+					document.getElementById('citizen-panel').classList.remove('hidden');
+					startCitizenPolling();
+				}
+			} catch (error) {
+				console.error('Error logging in:', error);
+			}
+		});
+
+		document.getElementById('register-form').addEventListener('submit', async e => {
+			e.preventDefault();
+			
+			if (document.getElementById('reg-password').value !== document.getElementById('confirm-password').value) {
+				showNotification('Пароли не совпадают', true);
+				return;
+			}
+			
+			try {
+				await apiRequest('register', {
+					fullname: document.getElementById('fullname').value,
+					district: document.getElementById('district').value,
+					email: document.getElementById('email').value,
+					phone: document.getElementById('phone').value,
+					'reg-password': document.getElementById('reg-password').value
+				});
+				
+				showNotification('Регистрация успешна. Войдите в систему.');
+				document.getElementById('register-form').reset();
+				document.getElementById('register-modal').classList.add('modal-hidden');
+			} catch (error) {
+				console.error('Error registering:', error);
+			}
+		});
+
+		document.getElementById('employee-logout').addEventListener('click', () => {
+			document.getElementById('employee-panel').classList.add('hidden');
+			document.getElementById('home-page').classList.remove('hidden');
+			
+			if (pollingIntervals.employee) clearInterval(pollingIntervals.employee);
+			
+			currentUser = null;
+		});
+
+		document.getElementById('admin-logout').addEventListener('click', () => {
+			document.getElementById('admin-panel').classList.add('hidden');
+			document.getElementById('home-page').classList.remove('hidden');
+			
+			if (pollingIntervals.admin) clearInterval(pollingIntervals.admin);
+			
+			currentUser = null;
+		});
+
+		document.getElementById('add-employee-btn').addEventListener('click', () => {
+			const modal = document.getElementById('employee-modal');
+			document.getElementById('employee-modal-title').textContent = 'Добавить сотрудника';
+			document.getElementById('employee-form').reset();
+			document.getElementById('employee-id').value = '';
+			
+			document.getElementById('employee-form').onsubmit = async e => {
+				e.preventDefault();
+				const departments = Array.from(document.getElementById('employee-department').selectedOptions).map(opt => opt.value);
+				
+				await apiRequest('add_employee', {
+					name: document.getElementById('employee-name').value,
+					username: document.getElementById('employee-username').value,
+					password: document.getElementById('employee-password').value,
+					departments
+				});
+				
+				showNotification('Сотрудник добавлен');
+				modal.classList.add('modal-hidden');
+				renderAdminPanel();
+			};
+			
+			modal.classList.remove('modal-hidden');
+		});
+
+		document.getElementById('close-employee-modal').addEventListener('click', () => {
+			document.getElementById('employee-modal').classList.add('modal-hidden');
+		});
+
+		document.getElementById('cancel-employee').addEventListener('click', () => {
+			document.getElementById('employee-modal').classList.add('modal-hidden');
+		});
+
+		document.getElementById('request-filter').addEventListener('change', () => {
+			loadUserRequests(document.getElementById('request-filter').value);
+		});
+
+		document.getElementById('employee-request-filter').addEventListener('change', () => {
+			loadEmployeeRequests(document.getElementById('employee-request-filter').value);
+		});
+
+		document.getElementById('employee-profile-tab').addEventListener('click', () => {
+			// Prevent default behavior
+			event.preventDefault();
+			
+			// Show profile content and hide other sections
+			document.getElementById('employee-profile-content').classList.remove('hidden');
+			document.getElementById('employee-requests-content').classList.add('hidden');
+			
+			// Update active tab styling
+			document.getElementById('employee-profile-tab').classList.add('active-tab');
+			document.getElementById('employee-requests-tab').classList.remove('active-tab');
+		});
+
+		document.getElementById('employee-requests-tab').addEventListener('click', () => {
+			// Prevent default behavior
+			event.preventDefault();
+			
+			// Show requests content and hide other sections
+			document.getElementById('employee-requests-content').classList.remove('hidden');
+			document.getElementById('employee-profile-content').classList.add('hidden');
+			
+			// Update active tab styling
+			document.getElementById('employee-requests-tab').classList.add('active-tab');
+			document.getElementById('employee-profile-tab').classList.remove('active-tab');
+		});
+
+		// Initialization
+		window.onload = async () => {
+			await loadSubcategories();
+		};
+	</script>
+</body>
+</html>
